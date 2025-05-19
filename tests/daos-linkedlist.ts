@@ -115,6 +115,50 @@ describe("daos-linkedlist", () => {
     expect(node3.next).to.equal(null);
   });
 
+  it("Traverses the entire list to verify structure", async () => {
+    // Fetch the linked list to find the head
+    const linkedList = await program.account.linkedList.fetch(
+      linkedListAccount.publicKey
+    );
+
+    // Start at the head
+    let currentNodeKey = linkedList.head;
+    let nodesVisited = 0;
+
+    // Keep track of what we've seen
+    const visitedNodes = [];
+
+    // Traverse the list
+    while (currentNodeKey) {
+      const currentNode = await program.account.node.fetch(currentNodeKey);
+      visitedNodes.push({
+        publicKey: currentNodeKey.toString(),
+        data: currentNode.data,
+      });
+
+      currentNodeKey = currentNode.next;
+      nodesVisited++;
+
+      // Safety check to prevent infinite loops
+      if (nodesVisited > 10) break;
+    }
+
+    // We should have 3 nodes in the expected order
+    expect(visitedNodes.length).to.equal(3);
+    expect(visitedNodes[0].publicKey).to.equal(
+      node1Account.publicKey.toString()
+    );
+    expect(visitedNodes[0].data).to.equal(42);
+    expect(visitedNodes[1].publicKey).to.equal(
+      node2Account.publicKey.toString()
+    );
+    expect(visitedNodes[1].data).to.equal(99);
+    expect(visitedNodes[2].publicKey).to.equal(
+      node3Account.publicKey.toString()
+    );
+    expect(visitedNodes[2].data).to.equal(101);
+  });
+
   it("Deletes the middle node", async () => {
     await program.methods
       .delete()
